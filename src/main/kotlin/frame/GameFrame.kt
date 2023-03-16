@@ -10,8 +10,8 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
     private val DELAY = 100
     private val INITIAL_SNAKE_SIZE = 3
     private val BLOCK_SIZE = 20
-    private val GAME_WIDTH = 600
-    private val GAME_HEIGHT = 400
+    private val GAME_WIDTH = 800
+    private val GAME_HEIGHT = 800
     private var points = 0
     private val pointsLabel = JLabel("Points: $points")
 
@@ -63,7 +63,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
         points++
         pointsLabel.text = "Points: $points"
 
-        if(points == 5) {
+        if(points == 30) {
             gameWon()
         }
     }
@@ -92,15 +92,17 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
                 }
             }
         }
-        if (head == apple) {
+
+        if (head == apple || snake.contains(apple)) {
             if (snake.size < GAME_WIDTH * GAME_HEIGHT / BLOCK_SIZE / BLOCK_SIZE) {
                 snake.add(snake.last().location)
+                points++
+                pointsLabel.text = "Points: $points"
                 placeApple()
             } else {
                 gameOver()
             }
         }
-
     }
 
 

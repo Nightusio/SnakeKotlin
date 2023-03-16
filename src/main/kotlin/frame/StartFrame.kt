@@ -8,8 +8,8 @@ import kotlin.system.exitProcess
 
 class StartFrame(title: String) : JFrame(title) {
 
-    private val GAME_WIDTH = 600
-    private val GAME_HEIGHT = 400
+    private val GAME_WIDTH = 800
+    private val GAME_HEIGHT = 800
 
     init {
         val startMenu = JMenu("Start")
