@@ -51,22 +51,22 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
     }
 
     override fun actionPerformed(e: ActionEvent?) {
+        if (points == 30) {
+            gameWon()
+            return
+        }
+
         moveSnake()
         checkCollisions()
         repaint()
     }
 
     private fun placeApple() {
-        apple = Point((Math.random() * (GAME_WIDTH / BLOCK_SIZE)).toInt() * BLOCK_SIZE,
-            (Math.random() * (GAME_HEIGHT / BLOCK_SIZE)).toInt() * BLOCK_SIZE)
-
-        points++
-        pointsLabel.text = "Points: $points"
-
-        if(points == 30) {
-            gameWon()
-        }
+        val rangeX = GAME_WIDTH / BLOCK_SIZE / 4..(GAME_WIDTH / BLOCK_SIZE * 3 / 4)
+        val rangeY = GAME_HEIGHT / BLOCK_SIZE / 4..(GAME_HEIGHT / BLOCK_SIZE * 3 / 4)
+        apple = Point((rangeX.random() * BLOCK_SIZE), (rangeY.random() * BLOCK_SIZE))
     }
+
 
     private fun moveSnake() {
         val head = snake.first().location
@@ -93,18 +93,19 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
             }
         }
 
-        if (head == apple || snake.contains(apple)) {
-            if (snake.size < GAME_WIDTH * GAME_HEIGHT / BLOCK_SIZE / BLOCK_SIZE) {
-                snake.add(snake.last().location)
+        if (head.location == apple?.location) {
+            val tail = snake.last()
+            val newTail = Point(tail.x, tail.y)
+            snake.add(newTail)
+
+            if (snake.size <= GAME_WIDTH * GAME_HEIGHT / BLOCK_SIZE / BLOCK_SIZE) {
                 points++
                 pointsLabel.text = "Points: $points"
-                placeApple()
-            } else {
-                gameOver()
             }
+
+            placeApple()
         }
     }
-
 
     private fun gameOver() {
         isRunning = false
