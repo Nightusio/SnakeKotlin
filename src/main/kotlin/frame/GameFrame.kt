@@ -3,22 +3,29 @@ package frame
 import javax.swing.*
 import java.awt.*
 import java.awt.event.*
+import java.io.File
 import kotlin.concurrent.thread
 
 class GameFrame(title: String) : JFrame(title), ActionListener {
-    private val DELAY = 80 // Decreased delay for faster updates
-    private val INITIAL_SNAKE_SIZE = 3
-    private val BLOCK_SIZE = 20
-    private val GAME_WIDTH = 800
-    private val GAME_HEIGHT = 800
-    private var points = 0
-    private val pointsLabel = JLabel("Points: $points")
+
+    companion object {
+        private val DELAY = 80 // Decreased delay for faster updates, increase for faster snake movement
+        private val INITIAL_SNAKE_SIZE = 3
+        private val BLOCK_SIZE = 20
+        private val GAME_WIDTH = 800
+        private val GAME_HEIGHT = 800
+    }
 
     private val snake: MutableList<Point> = mutableListOf()
     private var direction = Direction.RIGHT
     private var apple: Point? = null
     private var isRunning = false
     private var timer: Timer? = null
+
+    private var points = 0
+    private var highScore = readHighScore()
+    private val pointsLabel = JLabel("Points: $points")
+    private val highScoreLabel = JLabel("High Score: $highScore")
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -29,7 +36,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         // Initialize snake with initial size and position
         for (i in 0 until INITIAL_SNAKE_SIZE) {
-            snake.add(Point(GAME_WIDTH / 2 - BLOCK_SIZE * i, GAME_HEIGHT / 2))
+            snake += Point(GAME_WIDTH / 2 - BLOCK_SIZE * i, GAME_HEIGHT / 2)
         }
 
         // Place the first apple
@@ -50,6 +57,14 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
         // Start the game loop
         isRunning = true
         timer?.start()
+
+        // Add points and high score labels to the top of the window
+        val labelPanel = JPanel()
+        labelPanel.layout = BoxLayout(labelPanel, BoxLayout.X_AXIS)
+        labelPanel.add(pointsLabel)
+        labelPanel.add(Box.createHorizontalGlue())
+        labelPanel.add(highScoreLabel)
+        add(labelPanel, BorderLayout.SOUTH)
 
         // Add points label to the top of the window
         add(pointsLabel, BorderLayout.NORTH)
@@ -95,10 +110,12 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
         val head = snake.first()
 
         // Check for collision with walls
-        if (head.x < 0 || head.x >= GAME_WIDTH || head.y < 0 || head.y >= GAME_HEIGHT)
-
+        if (head.x < 0 || head.x >= GAME_WIDTH || head.y < 0 || head.y >= GAME_HEIGHT) {
+            System.out.println("1")
+            gameOver()
+            return
+        }
         // Game over if the snake hits the wall
-        gameOver()
 
         // Check for collision with apple
         apple?.let {
@@ -114,28 +131,69 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
         }
 
         // Check for collision with snake's body
-        for (i in 1 until snake.size) {
-            if (head == snake[i]) {
+        (1 until snake.size)
+            .asSequence()
+            .filter { head == snake[it] }
+            .forEach { _ ->
                 // Game over if the snake hits its own body
+                System.out.println("2")
                 gameOver()
             }
-        }
     }
 
     private fun gameOver() {
-        // Stop the game loop and display a message dialog
+        // Stop the game loop and display a message dialog with a restart button
         isRunning = false
         timer?.stop()
-        JOptionPane.showMessageDialog(this, "Game over! Your score is $points", "Game over", JOptionPane.INFORMATION_MESSAGE)
-        dispose()
+        val option = JOptionPane.showOptionDialog(this, "Game over! Your score is $points", "Game over", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, arrayOf("Restart"), "Restart")
+        saveHighScore()
+        if (option == 0) {
+            restartGame()
+        } else {
+            dispose()
+        }
     }
 
     private fun gameWon() {
-        // Stop the game loop and display a message dialog
+        // Stop the game loop and display a message dialog with a restart button
         isRunning = false
         timer?.stop()
-        JOptionPane.showMessageDialog(this, "You won! Your score is $points", "You won!", JOptionPane.INFORMATION_MESSAGE)
-        dispose()
+        val option = JOptionPane.showOptionDialog(this, "You won! Your score is $points", "You won!", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, arrayOf("Restart"), "Restart")
+        saveHighScore()
+        if (option == 0) {
+            restartGame()
+        } else {
+            dispose()
+        }
+    }
+
+    private fun readHighScore(): Int {
+        // Load the high score from the highscore.txt file
+        val file = File("highscore.txt")
+        if (file.exists()) {
+            return file.readText().toIntOrNull() ?: 0
+        }
+        return 0
+    }
+
+    private fun saveHighScore() {
+        // Save the high score to the highscore.txt file
+        val file = File("highscore.txt")
+        file.writeText(highScore.coerceAtLeast(points).toString())
+    }
+
+    private fun restartGame() {
+        // Reset the game state and start a new game
+        points = 0
+        pointsLabel.text = "Points: $points"
+        snake.clear()
+        for (i in 0 until INITIAL_SNAKE_SIZE) {
+            snake.add(Point(GAME_WIDTH / 2 - BLOCK_SIZE * i, GAME_HEIGHT / 2))
+        }
+        placeApple()
+        direction = Direction.RIGHT
+        isRunning = true
+        timer?.start()
     }
 
     override fun paint(g: Graphics?) {
