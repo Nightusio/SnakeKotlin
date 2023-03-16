@@ -1,13 +1,12 @@
 package frame
 
-import javax.swing.JFrame
-
+import javax.swing.*
 import java.awt.*
 import java.awt.event.*
-import javax.swing.*
+import kotlin.concurrent.thread
 
 class GameFrame(title: String) : JFrame(title), ActionListener {
-    private val DELAY = 100
+    private val DELAY = 80 // Decreased delay for faster updates
     private val INITIAL_SNAKE_SIZE = 3
     private val BLOCK_SIZE = 20
     private val GAME_WIDTH = 800
@@ -28,12 +27,15 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         timer = Timer(DELAY, this)
 
+        // Initialize snake with initial size and position
         for (i in 0 until INITIAL_SNAKE_SIZE) {
             snake.add(Point(GAME_WIDTH / 2 - BLOCK_SIZE * i, GAME_HEIGHT / 2))
         }
 
+        // Place the first apple
         placeApple()
 
+        // Listen for key presses to change direction
         addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
                 when (e.keyCode) {
@@ -45,30 +47,38 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
             }
         })
 
+        // Start the game loop
         isRunning = true
         timer?.start()
+
+        // Add points label to the top of the window
         add(pointsLabel, BorderLayout.NORTH)
     }
 
     override fun actionPerformed(e: ActionEvent?) {
+        // Check if the player has won
         if (points == 30) {
             gameWon()
             return
         }
 
-        moveSnake()
-        checkCollisions()
-        repaint()
+        // Move the snake and check for collisions
+        thread {
+            moveSnake()
+            checkCollisions()
+            repaint() // Moved repaint call to the thread to update the UI on a separate thread
+        }
     }
 
     private fun placeApple() {
+        // Randomly place the apple within the inner 50% of the game area
         val rangeX = GAME_WIDTH / BLOCK_SIZE / 4..(GAME_WIDTH / BLOCK_SIZE * 3 / 4)
         val rangeY = GAME_HEIGHT / BLOCK_SIZE / 4..(GAME_HEIGHT / BLOCK_SIZE * 3 / 4)
         apple = Point((rangeX.random() * BLOCK_SIZE), (rangeY.random() * BLOCK_SIZE))
     }
 
-
     private fun moveSnake() {
+        // Move the snake's head in the current direction
         val head = snake.first().location
         when (direction) {
             Direction.LEFT -> head.x -= BLOCK_SIZE
@@ -76,68 +86,77 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
             Direction.UP -> head.y -= BLOCK_SIZE
             Direction.DOWN -> head.y += BLOCK_SIZE
         }
+        // Add the new head position to the beginning of the snake list and remove the tail
         snake.add(0, head)
         snake.removeLast()
     }
 
     private fun checkCollisions() {
         val head = snake.first()
-        if (head.x < 0 || head.x >= GAME_WIDTH || head.y < 0 || head.y >= GAME_HEIGHT) {
-            gameOver()
-        } else {
-            for (i in 1 until snake.size) {
-                if (head == snake[i]) {
-                    gameOver()
-                    break
-                }
+
+        // Check for collision with walls
+        if (head.x < 0 || head.x >= GAME_WIDTH || head.y < 0 || head.y >= GAME_HEIGHT)
+
+        // Game over if the snake hits the wall
+        gameOver()
+
+        // Check for collision with apple
+        apple?.let {
+            if (head == it) {
+                // Increase points and update label
+                points++
+                pointsLabel.text = "Points: $points"
+
+                // Add a new block to the snake and place a new apple
+                snake.add(snake.last())
+                placeApple()
             }
         }
 
-        if (head.location == apple?.location) {
-            val tail = snake.last()
-            val newTail = Point(tail.x, tail.y)
-            snake.add(newTail)
-
-            if (snake.size <= GAME_WIDTH * GAME_HEIGHT / BLOCK_SIZE / BLOCK_SIZE) {
-                points++
-                pointsLabel.text = "Points: $points"
+        // Check for collision with snake's body
+        for (i in 1 until snake.size) {
+            if (head == snake[i]) {
+                // Game over if the snake hits its own body
+                gameOver()
             }
-
-            placeApple()
         }
     }
 
     private fun gameOver() {
+        // Stop the game loop and display a message dialog
         isRunning = false
         timer?.stop()
-
-        JOptionPane.showMessageDialog(this, "Game over!", "Snake - Game over", JOptionPane.INFORMATION_MESSAGE)
-
+        JOptionPane.showMessageDialog(this, "Game over! Your score is $points", "Game over", JOptionPane.INFORMATION_MESSAGE)
         dispose()
     }
 
     private fun gameWon() {
+        // Stop the game loop and display a message dialog
         isRunning = false
         timer?.stop()
-
-        JOptionPane.showMessageDialog(this, "You won!", "Snake - You won", JOptionPane.INFORMATION_MESSAGE)
-
+        JOptionPane.showMessageDialog(this, "You won! Your score is $points", "You won!", JOptionPane.INFORMATION_MESSAGE)
         dispose()
     }
 
     override fun paint(g: Graphics?) {
         super.paint(g)
+        g as Graphics2D
 
-        g?.color = Color.GREEN
-        for (point in snake) {
-            g?.fillRect(point.x, point.y, BLOCK_SIZE, BLOCK_SIZE)
+        // Draw the snake
+        g.color = Color.GREEN
+        for (block in snake) {
+            g.fillRect(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE)
         }
 
-        g?.color = Color.RED
-        g?.fillRect(apple?.x ?: 0, apple?.y ?: 0, BLOCK_SIZE, BLOCK_SIZE)
+        // Draw the apple
+        g.color = Color.RED
+        apple?.let {
+            g.fillOval(it.x, it.y, BLOCK_SIZE, BLOCK_SIZE)
+        }
     }
 
-    enum class Direction {
-        LEFT, RIGHT, UP, DOWN
-    }
+}
+
+enum class Direction {
+    LEFT, RIGHT, UP, DOWN
 }
