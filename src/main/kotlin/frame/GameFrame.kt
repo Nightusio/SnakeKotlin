@@ -79,7 +79,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         // Move the snake and check for collisions
         thread {
-            if(isRunning) {
+            if(isRunning) { // It magically repairs OOB exception
                 moveSnake()
                 checkCollisions()
                 repaint() // Moved repaint call to the thread to update the UI on a separate thread
@@ -113,7 +113,6 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         // Check for collision with walls
         if (head.x < 0 || head.x >= GAME_WIDTH || head.y < 0 || head.y >= GAME_HEIGHT) {
-            System.out.println("1")
             gameOver()
             return
         }
@@ -138,7 +137,6 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
             .filter { head == snake[it] }
             .forEach { _ ->
                 // Game over if the snake hits its own body
-                System.out.println("2")
                 gameOver()
             }
     }
@@ -185,7 +183,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
     }
 
     private fun restartGame() {
-        isRunning = false
+        isRunning = false //Stops gane
         // Reset the game state and start a new game
         points = 0
         pointsLabel.text = "Points: $points"
