@@ -64,10 +64,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
         labelPanel.add(pointsLabel)
         labelPanel.add(Box.createHorizontalGlue())
         labelPanel.add(highScoreLabel)
-        add(labelPanel, BorderLayout.SOUTH)
-
-        // Add points label to the top of the window
-        add(pointsLabel, BorderLayout.NORTH)
+        add(labelPanel, BorderLayout.NORTH)
     }
 
     override fun actionPerformed(e: ActionEvent?) {
@@ -79,7 +76,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         // Move the snake and check for collisions
         thread {
-            if(isRunning) { // It magically repairs OOB exception
+            if(isRunning) {
                 moveSnake()
                 checkCollisions()
                 repaint() // Moved repaint call to the thread to update the UI on a separate thread
@@ -131,14 +128,16 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
             }
         }
 
-        // Check for collision with snake's body
-        (1 until snake.size)
-            .asSequence()
-            .filter { head == snake[it] }
-            .forEach { _ ->
-                // Game over if the snake hits its own body
-                gameOver()
-            }
+        if(isRunning) {
+            // Check for collision with snake's body
+            (1 until snake.size)
+                .asSequence()
+                .filter { head == snake[it] }
+                .forEach { _ ->
+                    // Game over if the snake hits its own body
+                    gameOver()
+                }
+        }
     }
 
     private fun gameOver() {
