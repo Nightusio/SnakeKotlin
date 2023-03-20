@@ -79,9 +79,11 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
 
         // Move the snake and check for collisions
         thread {
-            moveSnake()
-            checkCollisions()
-            repaint() // Moved repaint call to the thread to update the UI on a separate thread
+            if(isRunning) {
+                moveSnake()
+                checkCollisions()
+                repaint() // Moved repaint call to the thread to update the UI on a separate thread
+            }
         }
     }
 
@@ -183,6 +185,7 @@ class GameFrame(title: String) : JFrame(title), ActionListener {
     }
 
     private fun restartGame() {
+        isRunning = false
         // Reset the game state and start a new game
         points = 0
         pointsLabel.text = "Points: $points"
